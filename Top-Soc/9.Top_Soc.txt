@@ -1,0 +1,51 @@
+
+module top_soc (
+    input clk,
+    input reset_n,
+    input wire rx, 
+    output wire tx 
+);
+    
+    wire [7:0] p_addr; 
+    wire p_write;
+    wire p_enable;
+    wire p_sel_uart;
+    wire [7:0] p_data;
+    
+    wire [7:0] data_rx; // Data phản hồi từ UART (RX/Status)
+    
+    top_cpu cpu_inst (
+        .clk(clk),
+        .reset_n(reset_n),
+        .data_rx(data_rx), 
+
+        .p_addr(p_addr), 
+        .p_write(p_write),
+        .p_enable(p_enable),
+        .p_sel_uart(p_sel_uart),
+        .p_data(p_data) 
+    );
+        
+    uart_rx uart_rx_inst (
+        .clk(clk),
+        .reset_n(reset_n), 
+        .rx(rx),
+        .p_addr(p_addr), 
+        .p_write(p_write),
+        .p_enable(p_enable),
+        .p_sel_uart(p_sel_uart),
+        .p_data_uart(data_rx) // UART RX trả lời trên bus data_rx
+    );
+    
+    uart_tx uart_tx_inst (
+        .clk(clk),
+        .reset_n(reset_n),
+        .p_addr(p_addr), 
+        .p_write(p_write),
+        .p_enable(p_enable),
+        .p_sel_uart(p_sel_uart),
+        .p_data(p_data), // UART TX nhận data từ bus p_data
+        .tx(tx)
+    );
+
+endmodule
