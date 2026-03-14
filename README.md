@@ -1,1 +1,1 @@
-# Mini---SoC---Design---Using---APB---Protocol
+# Mini-SoC-Design-Using-APB-Protocol
