@@ -1,0 +1,83 @@
+
+
+module uart_tx (
+    input clk,
+    input reset_n,
+
+    //APB
+    input p_write,
+    input p_sel_uart,
+    input [7:0] p_addr,
+    input p_enable,
+    input [7:0] p_data,
+
+    output reg tx
+);
+    localparam CLK_REG = 100_000_000;
+    localparam BAURATE = 115200;
+    localparam SPEED = CLK_REG / BAURATE;
+    reg [9:0] count;
+    reg [3:0] count_bit;
+    parameter IDLE = 2'd0;
+    parameter TRANSERMIT = 2'd1;
+    parameter DONE = 2'd2;
+
+    //APB
+    localparam TX_DATA = 8'b0000_1000;
+    wire enable_tx;
+    assign enable_tx = p_sel_uart && p_enable && p_write && (p_addr == TX_DATA);
+    reg [7:0] data_tx;   // luu du lieu tu p_data
+    reg [1:0] state;
+    always @(posedge clk or negedge reset_n)begin
+        if(!reset_n)begin
+            count <= 0;
+            count_bit <= 0;
+            state <= IDLE;
+            tx <= 1;
+            data_tx <= 0;
+        end 
+        else begin
+                case(state)
+                    IDLE:begin
+                        count <= 0;
+                        if(enable_tx)begin
+                            tx <= 0;
+                            data_tx <= p_data;
+                            state <= TRANSERMIT;
+                        end 
+                        else begin
+                            state <= IDLE;
+                        end
+                    end
+                    TRANSERMIT:begin
+                        if(count == SPEED - 1)begin
+                            if(count_bit < 8)begin
+                                tx <= data_tx[count_bit];
+                                count_bit <= count_bit + 1;
+                                count <= 0;
+                            end
+                            else begin
+                                count_bit <= 0;
+                                state <= DONE;
+                                tx <= 1;
+                            end
+                        end
+                        else begin
+                            count <= count + 1;
+                        end
+                    end
+                    DONE:begin
+                        if(count == SPEED - 1)begin
+                            count <= 0;
+                            state <= IDLE;
+                        end
+                        else begin
+                            count <= count + 1;
+                        end
+                    end
+                    default: state <= IDLE;
+                endcase
+        end
+    end
+    
+endmodule
